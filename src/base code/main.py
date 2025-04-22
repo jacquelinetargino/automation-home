@@ -44,7 +44,7 @@ while cap.isOpened():
         # Desenha a caixa preta ao redor do corpo
         cv2.rectangle(frame, (min_x - 10, min_y - 10), (max_x + 10, max_y + 10), (0, 0, 0), 3)
 
-        # Posições para cálculo do ângulo
+        # Posições para cálculo do ângulo e inclinação do tronco
         ombro = [lm[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x,
                  lm[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
         quadril = [lm[mp_pose.PoseLandmark.LEFT_HIP.value].x,
@@ -55,6 +55,13 @@ while cap.isOpened():
 
         angulo = calcular_angulo(ombro, quadril, joelho)
 
+        # Cálculo da inclinação do tronco (ombro -> quadril)
+        tronco_dx = ombro[0] - quadril[0]
+        tronco_dy = ombro[1] - quadril[1]
+        angulo_tronco = np.degrees(np.arctan2(tronco_dy, tronco_dx))
+        angulo_tronco = abs(angulo_tronco)
+
+        # Cálculo da velocidade de queda
         tempo_atual = time.time()
         if altura_cabeca_anterior is not None and tempo_anterior is not None:
             dt = tempo_atual - tempo_anterior
@@ -66,18 +73,18 @@ while cap.isOpened():
         # Classificação da postura
         if velocidade_queda > 1.5 and angulo < 60:
             estado = "Queda detectada!"
-            cor = (0, 0, 255)  # Vermelho
+            cor = (0, 0, 00)  # Preto
         elif angulo > 140:
             estado = "Em pé"
-            cor = (0, 255, 0)
-        elif 90 < angulo <= 140:
+            cor = (0, 0, 0)  # Preto
+        elif 90 < angulo <= 140 and angulo_tronco < 40:
             estado = "Sentado"
-            cor = (255, 255, 0)
+            cor = (0, 0, 0)  # Preto
         else:
             estado = "Deitado"
-            cor = (255, 0, 255)
+            cor = (0, 0, 0)  # Preto
 
-        # Escreve o estado dentro da caixa
+        # Escreve o estado acima da caixa
         cv2.putText(frame, f"{estado}", (min_x, min_y - 20),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, cor, 3)
 
