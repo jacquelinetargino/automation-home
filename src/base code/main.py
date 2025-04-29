@@ -21,6 +21,7 @@ cv2.resizeWindow("Detector de Queda", 1280, 720)
 altura_cabeca_anterior = None
 tempo_anterior = None
 velocidade_queda = 0
+queda_detectada = False  # <----- NOVO
 
 while cap.isOpened():
     ret, frame = cap.read()
@@ -71,23 +72,40 @@ while cap.isOpened():
         tempo_anterior = tempo_atual
 
         # Classificação da postura
-        if velocidade_queda > 1.5 and angulo < 60:
-            estado = "Queda detectada!"
-            cor = (0, 0, 00)  # Preto
+        if velocidade_queda > 0.2 and angulo < 100:
+            estado = "Queda Detectada!"
+            cor = (0, 0, 255)  # Vermelho
+            queda_detectada = True  # <----- QUEDA FOI DETECTADA
         elif angulo > 140:
-            estado = "Em pé"
+            estado = "Em pe"
             cor = (0, 0, 0)  # Preto
-        elif 90 < angulo <= 140 and angulo_tronco < 40:
+        elif 90 < angulo <= 140 and 70 <= angulo_tronco <= 110:
             estado = "Sentado"
-            cor = (0, 0, 0)  # Preto
+            cor = (0, 255, 0)  # Verde
         else:
             estado = "Deitado"
-            cor = (0, 0, 0)  # Preto
+            cor = (255, 0, 255)  # Roxo
 
         # Escreve o estado acima da caixa
         cv2.putText(frame, f"{estado}", (min_x, min_y - 20),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, cor, 3)
 
+    # Se uma queda já foi detectada, mostrar a mensagem sempre
+    if queda_detectada:
+        overlay = frame.copy()
+        cv2.rectangle(overlay, (0, 0), (frame.shape[1], frame.shape[0]), (0, 0, 255), -1)  # Tela Vermelha
+        alpha = 0.7
+        cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
+
+        texto = "QUEDA DETECTADA!"
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        font_scale = 3
+        thickness = 10
+        tamanho_texto, _ = cv2.getTextSize(texto, font, font_scale, thickness)
+        text_x = (frame.shape[1] - tamanho_texto[0]) // 2
+        text_y = (frame.shape[0] + tamanho_texto[1]) // 2
+        cv2.putText(frame, texto, (text_x, text_y), font, font_scale, (255, 255, 255), thickness)
+    
     # Ajuste para exibição em tela
     win_x, win_y, win_w, win_h = cv2.getWindowImageRect("Detector de Queda")
     frame_resized = cv2.resize(frame, (win_w, win_h))
